@@ -1798,7 +1798,7 @@ namespace HTML5
                         case "image":
                             {
                                 ElementToken fakeToken = new ElementToken("img", token.Attributes, token.AttrCount, token.SelfClosing);
-                                return StartTagToken(ref token, mode);
+								return StartTagToken(ref fakeToken, mode);
                             }
                         case "isindex":
                             {

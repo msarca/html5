@@ -79,22 +79,22 @@ namespace HTML5
         #endregion
 
         #region Constants
-
-		private static byte CHAR_ALPHA_LOW = 1; //alpha chars
-		private static byte CHAR_ALPHA_UP = 2;
-
-        private static char[] X_LT_SOLIDUS = new char[] { '<', '/' };
-        private static char[] X_MINUS2 = new char[] { '-', '-' };
-        private static char[] X_MINUS2_REPLACEMENT = new char[] { '-', '-', '\ufffd' };
-        private static char[] X_LT_EXCLAMATION = new char[] { '<', '!' };
-        private static char[] X_MINUS_REPLACEMENT = new char[] { '-', '\ufffd' };
-        private static char[] X_MINUS2_EXCLAMATION = new char[] { '-', '-', '!' };
-        private static char[] X_MINUS2_EXCLAMATION_REPLACEMENT = new char[] { '-', '-', '!', '\ufffd' };
-        private static char[] R_REPLACEMENT = new char[] { '\ufffd'};
-        private static char[] R_CR = new char[] { '\u000d' };
-        private static char[][] R_NO_CHARS = new char[][] {
-            new char[] {'a'}
-        };
+		private const byte CHAR_ALPHA_LOW = 1; //alpha chars
+		private const byte CHAR_ALPHA_UP = 2;
+		private const byte CHAR_NULL = 3;
+		private const byte CHAR_LT = 4;
+		private const byte CHAR_GT = 5;
+		private const byte CHAR_SOLIDUS = 6;
+		private const byte CHAR_MINUS = 7;
+		private const byte CHAR_AMPER = 8;
+		private const byte CHAR_EQUAL = 9;
+		private const byte CHAR_CR = 10;
+		private const byte CHAR_LF = 11;
+		private const byte CHAR_REPLACEMENT = 12;
+		private const byte CHAR_SQUOTE = 13;
+		private const byte CHAR_DQUOTE = 14;
+		private const byte CHAR_EXCLAMATION = 15;
+		private const byte CHAR_QUESTION = 16;
         #endregion
 
         char[] TempBuffer, TagName, DataBuffer, CommentBuffer, AttrNameBuffer, AttrValueBuffer;
