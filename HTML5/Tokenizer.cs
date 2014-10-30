@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 
 namespace HTML5
 {
@@ -88,13 +86,15 @@ namespace HTML5
 		private const byte CHAR_MINUS = 7;
 		private const byte CHAR_AMPER = 8;
 		private const byte CHAR_EQUAL = 9;
-		private const byte CHAR_CR = 10;
+		private const byte CHAR_GRAVE = 10;
 		private const byte CHAR_LF = 11;
 		private const byte CHAR_REPLACEMENT = 12;
 		private const byte CHAR_SQUOTE = 13;
 		private const byte CHAR_DQUOTE = 14;
 		private const byte CHAR_EXCLAMATION = 15;
 		private const byte CHAR_QUESTION = 16;
+		private const byte CHAR_WS = 17;
+		private const byte CHAR_EOF = 18;
         #endregion
 
         char[] TempBuffer, TagName, DataBuffer, CommentBuffer, AttrNameBuffer, AttrValueBuffer;
@@ -448,6 +448,7 @@ namespace HTML5
             pendingBufferLength = 0;
             for (int pointer = 0; pointer < length; pointer++)
             {
+				byte crtc = 0;
                 char c = unchecked(cbuff[pointer]);
                 #region iterate
                 switch (c)
@@ -458,21 +459,133 @@ namespace HTML5
                             lastWasCR = false;
                             continue;
                         }
+						crtc = CHAR_WS;
                         break;
                     case '\r':
                         {
                             c = '\n';
+							crtc = CHAR_WS;
                             lastWasCR = true;
                         }
                         break;
                     case '\t':
+					case '\f':
+					case ' ':
                         lastWasCR = false;
+						crtc = CHAR_WS;
                         break;
                     case '\ufeff':
+						lastWasCR = false;
                         if (pointer == 0 && parsingCalls == 0)
                             continue;
-                        lastWasCR = false;
+						crtc = CHAR_REPLACEMENT;
                         break;
+					case '&':
+						lastWasCR = false;
+						crtc = CHAR_AMPER;
+						break;
+					case '<':
+						lastWasCR = false;
+						crtc = CHAR_LT;
+						break;
+					case '>':
+						lastWasCR = false;
+						crtc = CHAR_GT;
+						break;
+					case '!':
+						lastWasCR = false;
+						crtc = CHAR_EXCLAMATION;
+						break;
+					case '?':
+						lastWasCR = false;
+						crtc = CHAR_QUESTION;
+						break;
+					case '/':
+						lastWasCR = false;
+						crtc = CHAR_SOLIDUS;
+						break;
+					case '"':
+						lastWasCR = false;
+						crtc = CHAR_DQUOTE;
+						break;
+					case '\'':
+						lastWasCR = false;
+						crtc = CHAR_SQUOTE;
+						break;
+					case '`':
+						lastWasCR = false;
+						crtc = CHAR_GRAVE;
+						break;
+					case '-':
+						lastWasCR = false;
+						crtc = CHAR_MINUS;
+						break;
+					case '=':
+						lastWasCR = false;
+						crtc = CHAR_EQUAL;
+						break;
+					case '\u0000':
+						lastWasCR = false;
+						crtc = CHAR_NULL;
+						break;
+					case 'A':
+					case 'B':
+					case 'C':
+					case 'D':
+					case 'E':
+					case 'F':
+					case 'G':
+					case 'H':
+					case 'I':
+					case 'J':
+					case 'K':
+					case 'L':
+					case 'M':
+					case 'N':
+					case 'O':
+					case 'P':
+					case 'Q':
+					case 'R':
+					case 'S':
+					case 'T':
+					case 'U':
+					case 'V':
+					case 'W':
+					case 'X':
+					case 'Y':
+					case 'Z':
+						lastWasCR = false;
+						crtc = CHAR_ALPHA_UP;
+						break;
+					case 'a':
+					case 'b':
+					case 'c':
+					case 'd':
+					case 'e':
+					case 'f':
+					case 'g':
+					case 'h':
+					case 'i':
+					case 'j':
+					case 'k':
+					case 'l':
+					case 'm':
+					case 'n':
+					case 'o':
+					case 'p':
+					case 'q':
+					case 'r':
+					case 's':
+					case 't':
+					case 'u':
+					case 'v':
+					case 'w':
+					case 'x':
+					case 'y':
+					case 'z':
+						lastWasCR = false;
+						crtc = CHAR_ALPHA_LOW;
+						break;
                     default:
                         lastWasCR = false;
                         if (Char.IsControl(c))
@@ -483,15 +596,15 @@ namespace HTML5
                 switch (STATE)
                 {
                     case DATA_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '&':
+                            case CHAR_AMPER:
                                 STATE = CHARACTER_REFERENCE_IN_DATA_STATE;
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = TAG_OPEN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -532,15 +645,15 @@ namespace HTML5
                         }
                         break;
                     case RCDATA_STATE:
-                        switch (c)
+						switch (crtc)
                         {
-                            case '&':
+                            case CHAR_AMPER:
                                 STATE = CHARACTER_REFERENCE_IN_RCDATA_STATE;
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = RCDATA_LESS_THEN_SIGN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -582,12 +695,12 @@ namespace HTML5
                         }
                         break;
                     case RAWTEXT_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '<':
+                            case CHAR_LT:
                                 STATE = RAWTEXT_LESS_THAN_SIGN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -608,12 +721,12 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_LESS_THAN_SIGN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -633,9 +746,9 @@ namespace HTML5
                                 continue;
                         }
                     case PLAINTEXT_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -655,85 +768,26 @@ namespace HTML5
                                 continue;
                         }
                     case TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '!':
+                            case CHAR_EXCLAMATION:
                                 STATE = MARKUP_DECLARATION_OPEN_STATE;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = END_TAG_OPEN_STATE;
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(true, (char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = (char)(c + 0x0020);
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = false;
                                 STATE = TAG_NAME_STATE;
                                 continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(true, c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
-                                TagNamePtr = 1;
-                                TagEndTag = false;
-                                STATE = TAG_NAME_STATE;
-                                continue;
-                            case '?':
+                            case CHAR_QUESTION:
                                 STATE = BOGUS_COMMENT_STATE;
                                 continue;
                             default:
@@ -749,79 +803,20 @@ namespace HTML5
                                 continue;
                         }
                     case END_TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(false, (char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = c;
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = true;
                                 STATE = TAG_NAME_STATE;
                                 continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(false, c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
-                                TagNamePtr = 1;
-                                TagEndTag = true;
-                                STATE = TAG_NAME_STATE;
-                                continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 continue;
                             default:
@@ -830,86 +825,27 @@ namespace HTML5
                         }
                         break;
                     case TAG_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = SELF_CLOSING_START_TAG_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TagName.Append((char)(c + 0x0020));
                                 unchecked
                                 {
-                                    TagName[TagNamePtr++] = (char)(c + 0x0020);
+									TagName[TagNamePtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 }
                                 continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TagName.Append(c);
-                                unchecked
-                                {
-                                    TagName[TagNamePtr++] = c;
-                                }
-                                continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //TagName.Append('\ufffd');
                                 unchecked
                                 {
@@ -946,79 +882,15 @@ namespace HTML5
                         }
                         break;
                     case RCDATA_END_TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(false,(char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = (char)(c + 0x0020);
-                                TagNamePtr = 1;
-                                TagEndTag = true;
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                STATE = RCDATA_END_TAG_NAME_STATE;
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(false,c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = true;
                                 //TempBuffer.Append(c);
@@ -1042,26 +914,23 @@ namespace HTML5
                                 continue;
                         }
                     case RCDATA_END_TAG_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 else
                                     goto default;
                                 break;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = SELF_CLOSING_START_TAG_STATE;
                                 else
                                     goto default;
                                 break;
-                            case '>':
+                            case CHAR_GT:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                 {
@@ -1071,71 +940,13 @@ namespace HTML5
                                 else
                                     goto default;
                                 break;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TagName.Append((char)(c + 0x0020));
                                 //TempBuffer.Append(c);
                                 unchecked
                                 {
-                                    TagName[TagNamePtr++] = (char)(c + 0x0020);
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TagName.Append(c);
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TagName[TagNamePtr++] = c;
+									TagName[TagNamePtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     TempBuffer[TempBufferPtr++] = c;
                                 }
                                 continue;
@@ -1175,79 +986,15 @@ namespace HTML5
                         }
                         break;
                     case RAWTEXT_END_TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(false, (char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = (char)(c + 0x0020);
-                                TagNamePtr = 1;
-                                TagEndTag = true;
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                STATE = RAWTEXT_END_TAG_NAME_STATE;
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(false, c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = true;
                                 //TempBuffer.Append(c);
@@ -1272,26 +1019,23 @@ namespace HTML5
                         }
 
                     case RAWTEXT_END_TAG_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = SELF_CLOSING_START_TAG_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                 {
@@ -1301,71 +1045,13 @@ namespace HTML5
                                 else
                                     goto default;
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TagName.Append((char)(c + 0x0020));
                                 //TempBuffer.Append(c);
                                 unchecked
                                 {
-                                    TagName[TagNamePtr++] = (char)(c + 0x0020);
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TagName.Append(c);
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TagName[TagNamePtr++] = c;
+									TagName[TagNamePtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     TempBuffer[TempBufferPtr++] = c;
                                 }
                                 continue;
@@ -1385,14 +1071,14 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_LESS_THAN_SIGN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //TempBuffer.Remove(0, TempBuffer.Length);
                                 TempBufferPtr = 0;
                                 STATE = SCRIPT_DATA_END_TAG_OPEN_STATE;
                                 continue;
-                            case '!':
+                            case CHAR_EXCLAMATION:
                                 STATE = SCRIPT_DATA_ESCAPE_START_STATE;
                                 unchecked
                                 {
@@ -1417,79 +1103,15 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_END_TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(false,(char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = (char)(c + 0x0020);
-                                TagNamePtr = 1;
-                                TagEndTag = true;
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                STATE = SCRIPT_DATA_END_TAG_NAME_STATE;
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(false, c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = true;
                                 //TempBuffer.Append(c);
@@ -1514,26 +1136,23 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_END_TAG_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = SELF_CLOSING_START_TAG_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                 {
@@ -1543,71 +1162,13 @@ namespace HTML5
                                 else
                                     goto default;
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TagName.Append((char)(c + 0x0020));
                                 //TempBuffer.Append(c);
                                 unchecked
                                 {
-                                    TagName[TagNamePtr++] = (char)(c + 0x0020);
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TagName.Append(c);
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TagName[TagNamePtr++] = c;
+									TagName[TagNamePtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     TempBuffer[TempBufferPtr++] = c;
                                 }
                                 continue;
@@ -1663,9 +1224,9 @@ namespace HTML5
                         }
                         break;
                     case SCRIPT_DATA_ESCAPED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = SCRIPT_DATA_ESCAPED_DASH_STATE;
                                 unchecked
                                 {
@@ -1675,10 +1236,10 @@ namespace HTML5
                                 }
                                 //DataBuffer.Append('-');
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (DataBufferPtr == DataBufferLength)
@@ -1699,9 +1260,9 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_ESCAPED_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = SCRIPT_DATA_ESCAPED_DASH_DASH_STATE;
                                 //DataBuffer.Append('-');
                                 unchecked
@@ -1711,10 +1272,10 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = '-';
                                 }
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 STATE = SCRIPT_DATA_ESCAPED_STATE;
                                 //DataBuffer.Append('\ufffd');
                                 unchecked
@@ -1737,9 +1298,9 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_ESCAPED_DASH_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 //DataBuffer.Append('-');
                                 unchecked
                                 {
@@ -1748,10 +1309,10 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = '-';
                                 }
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = SCRIPT_DATA_STATE;
                                 //DataBuffer.Append('>');
                                 unchecked
@@ -1761,7 +1322,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = '>';
                                 }
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 STATE = SCRIPT_DATA_ESCAPED_STATE;
                                 //DataBuffer.Append('\ufffd');
                                 unchecked
@@ -1784,89 +1345,21 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //TempBuffer.Remove(0, TempBuffer.Length);
                                 TempBufferPtr = 0;
                                 STATE = SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE;
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TempBuffer.Remove(0, TempBuffer.Length);
                                 //TempBuffer.Append((char)(c + 0x0020));
                                 unchecked
                                 {
                                     TempBufferPtr = 0;
-                                    TempBuffer[TempBufferPtr++] = (char)(c + 0x0020);
-                                }
-                                STATE = SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE;
-                                unchecked
-                                {
-                                    if (DataBufferPtr + 2 >= DataBufferLength)
-                                        DataBufferDoubleSize();
-                                    DataBuffer[DataBufferPtr++] = '<';
-                                    DataBuffer[DataBufferPtr++] = c;
-                                }
-                                //DataBuffer.Append('<');
-                                //DataBuffer.Append(c);
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TempBuffer.Remove(0, TempBuffer.Length);
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBufferPtr = 0;
-                                    TempBuffer[TempBufferPtr++] = c;
+									TempBuffer[TempBufferPtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 }
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE;
                                 unchecked
@@ -1893,79 +1386,15 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //initTag(false, (char)(c + 0x0020));
                                 TagIsSelfClosing = false;
                                 AttrList = null;
                                 AttrCount = 0;
-                                TagName[0] = (char)(c + 0x0020);
-                                TagNamePtr = 1;
-                                TagEndTag = true;
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                STATE = SCRIPT_DATA_ESCAPED_END_TAG_NAME_STATE;
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //initTag(false, c);
-                                TagIsSelfClosing = false;
-                                AttrList = null;
-                                AttrCount = 0;
-                                TagName[0] = c;
+								TagName[0] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                 TagNamePtr = 1;
                                 TagEndTag = true;
                                 //TempBuffer.Append(c);
@@ -1990,26 +1419,23 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_ESCAPED_END_TAG_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                     STATE = SELF_CLOSING_START_TAG_STATE;
                                 else
                                     goto default;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 //if (isAppropriate())
                                 if (LastTagName != null && (LastTagName == new string(TagName, 0, TagNamePtr)))
                                 {
@@ -2019,71 +1445,13 @@ namespace HTML5
                                 else
                                     goto default;
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TagName.Append((char)(c + 0x0020));
                                 //TempBuffer.Append(c);
                                 unchecked
                                 {
-                                    TagName[TagNamePtr++] = (char)(c + 0x0020);
-                                    TempBuffer[TempBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TagName.Append(c);
-                                //TempBuffer.Append(c);
-                                unchecked
-                                {
-                                    TagName[TagNamePtr++] = c;
+									TagName[TagNamePtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     TempBuffer[TempBufferPtr++] = c;
                                 }
                                 continue;
@@ -2103,14 +1471,11 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
-                            case '/':
-                            case '>':
+                            case CHAR_WS:
+                            case CHAR_SOLIDUS:
+                            case CHAR_GT:
                                 if (new string(TempBuffer, 0, TempBufferPtr) == "script")
                                     STATE = SCRIPT_DATA_DOUBLE_ESCAPED_STATE;
                                 else
@@ -2123,73 +1488,13 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TempBuffer.Append((char)(c + 0x0020));
                                 //DataBuffer.Append(c);
                                 unchecked
                                 {
-                                    TempBuffer[TempBufferPtr++] = (char)(c + 0x0020);
-                                    if (DataBufferPtr == DataBufferLength)
-                                        DataBufferDoubleSize();
-                                    DataBuffer[DataBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TempBuffer.Append(c);
-                                //DataBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
+									TempBuffer[TempBufferPtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     if (DataBufferPtr == DataBufferLength)
                                         DataBufferDoubleSize();
                                     DataBuffer[DataBufferPtr++] = c;
@@ -2202,9 +1507,9 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_DOUBLE_ESCAPED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE;
                                 //DataBuffer.Append('-');
                                 unchecked
@@ -2214,7 +1519,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = '-';
                                 }
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN_STATE;
                                 //DataBuffer.Append('<');
                                 unchecked
@@ -2224,7 +1529,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = '<';
                                 }
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //DataBuffer.Append('\ufffd');
                                 unchecked
                                 {
@@ -2245,9 +1550,9 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE;
                                 //DataBuffer.Append('-');
                                 unchecked
@@ -2257,7 +1562,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN_STATE;
                                 //DataBuffer.Append('<');
                                 unchecked
@@ -2267,7 +1572,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_STATE;
                                 //DataBuffer.Append('\ufffd');
                                 unchecked
@@ -2290,9 +1595,9 @@ namespace HTML5
                         }
 
                     case SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 //DataBuffer.Append('-');
                                 unchecked
                                 {
@@ -2301,7 +1606,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case '<':
+                            case CHAR_LT:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN_STATE;
                                 //DataBuffer.Append('<');
                                 unchecked
@@ -2311,7 +1616,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = SCRIPT_DATA_STATE;
                                 //DataBuffer.Append('>');
                                 unchecked
@@ -2321,7 +1626,7 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 STATE = SCRIPT_DATA_DOUBLE_ESCAPED_STATE;
                                 //DataBuffer.Append('\ufffd');
                                 unchecked
@@ -2364,14 +1669,11 @@ namespace HTML5
                         }
                         continue;
                     case SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
-                            case '/':
-                            case '>':
+                            case CHAR_WS:
+                            case CHAR_SOLIDUS:
+                            case CHAR_GT:
                                 //if (TempBuffer.ToString() == "script")
                                 if (new string(TempBuffer, 0, TempBufferPtr) == "script")
                                     STATE = SCRIPT_DATA_ESCAPED_STATE;
@@ -2385,73 +1687,13 @@ namespace HTML5
                                     DataBuffer[DataBufferPtr++] = c;
                                 }
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
+							case CHAR_ALPHA_LOW:
                                 //TempBuffer.Append((char)(c + 0x0020));
                                 //DataBuffer.Append(c);
                                 unchecked
                                 {
-                                    TempBuffer[TempBufferPtr++] = (char)(c + 0x0020);
-                                    if (DataBufferPtr == DataBufferLength)
-                                        DataBufferDoubleSize();
-                                    DataBuffer[DataBufferPtr++] = c;
-                                }
-                                continue;
-                            case 'a':
-                            case 'b':
-                            case 'c':
-                            case 'd':
-                            case 'e':
-                            case 'f':
-                            case 'g':
-                            case 'h':
-                            case 'i':
-                            case 'j':
-                            case 'k':
-                            case 'l':
-                            case 'm':
-                            case 'n':
-                            case 'o':
-                            case 'p':
-                            case 'q':
-                            case 'r':
-                            case 's':
-                            case 't':
-                            case 'u':
-                            case 'v':
-                            case 'w':
-                            case 'x':
-                            case 'y':
-                            case 'z':
-                                //TempBuffer.Append(c);
-                                //DataBuffer.Append(c);
-                                unchecked
-                                {
-                                    TempBuffer[TempBufferPtr++] = c;
+									TempBuffer[TempBufferPtr++] = (crtc == CHAR_ALPHA_UP ? (char)(c + 0x0020) : c);
                                     if (DataBufferPtr == DataBufferLength)
                                         DataBufferDoubleSize();
                                     DataBuffer[DataBufferPtr++] = c;
@@ -2464,57 +1706,29 @@ namespace HTML5
                         }
 
                     case BEFORE_ATTRIBUTE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = SELF_CLOSING_START_TAG_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
                                 NewAttribute((char)(c + 0x0020));
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 NewAttribute('\ufffd');
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '"':
-                            case '\'':
-                            case '<':
-                            case '=':
+                            case CHAR_SQUOTE:
+                            case CHAR_DQUOTE:
+                            case CHAR_LT:
+                            case CHAR_EQUAL:
                                 NewAttribute(c);
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
@@ -2525,66 +1739,38 @@ namespace HTML5
                         }
 
                     case ATTRIBUTE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = AFTER_ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = SELF_CLOSING_START_TAG_STATE;
                                 continue;
-                            case '=':
+                            case CHAR_EQUAL:
                                 STATE = BEFORE_ATTRIBUTE_VALUE_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
                                 //AttrName.Append((char)(c + 0x0020));
                                 unchecked
                                 {
                                     AttrNameBuffer[AttrNameBufferPtr++] = (char)(c + 0x0020);
                                 }
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //AttrName.Append('\ufffd');
                                 unchecked
                                 {
                                     AttrNameBuffer[AttrNameBufferPtr++] = '\ufffd';
                                 }
                                 continue;
-                            case '"':
-                            case '\'':
-                            case '<':
+                            case CHAR_DQUOTE:
+                            case CHAR_SQUOTE:
+                            case CHAR_LT:
                                 //AttrName.Append(c);
                                 unchecked
                                 {
@@ -2601,59 +1787,31 @@ namespace HTML5
                         }
 
                     case AFTER_ATTRIBUTE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = SELF_CLOSING_START_TAG_STATE;
                                 continue;
-                            case '=':
+                            case CHAR_EQUAL:
                                 STATE = BEFORE_ATTRIBUTE_VALUE_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
                                 NewAttribute((char)(c + 0x0020));
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 NewAttribute('\ufffd');
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '"':
-                            case '\'':
-                            case '<':
+                            case CHAR_DQUOTE:
+                            case CHAR_SQUOTE:
+                            case CHAR_LT:
                                 NewAttribute(c);
                                 STATE = ATTRIBUTE_NAME_STATE;
                                 continue;
@@ -2664,24 +1822,21 @@ namespace HTML5
                         }
 
                     case BEFORE_ATTRIBUTE_VALUE_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 STATE = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '&':
+                            case CHAR_AMPER:
                                 STATE = ATTRIBUTE_VALUE_UNQUOTED_STATE;
                                 pointer--;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 STATE = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 unchecked
                                 {
                                     if (AttrValueBufferPtr == AttrValueBufferLength)
@@ -2691,13 +1846,13 @@ namespace HTML5
                                 //AttrValue.Append('\ufffd');
                                 STATE = ATTRIBUTE_VALUE_UNQUOTED_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case '<':
-                            case '=':
-                            case '`':
+                            case CHAR_LT:
+                            case CHAR_EQUAL:
+                            case CHAR_GRAVE:
                                 //AttrValue.Append(c);
                                 unchecked
                                 {
@@ -2720,17 +1875,17 @@ namespace HTML5
                         }
 
                     case ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '"':
+                            case CHAR_DQUOTE:
                                 STATE = AFTER_ATTRIBUTE_VALUE_QUOTED_STATE;
                                 continue;
-                            case '&':
+                            case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
                                 ADDITIONAL_ALLOWED = '"';
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //AttrValue.Append('\ufffd');
                                 unchecked
                                 {
@@ -2751,17 +1906,17 @@ namespace HTML5
                         }
 
                     case ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 STATE = AFTER_ATTRIBUTE_VALUE_QUOTED_STATE;
                                 continue;
-                            case '&':
+                            case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
                                 ADDITIONAL_ALLOWED = '\'';
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //AttrValue.Append('\ufffd');
                                 unchecked
                                 {
@@ -2782,24 +1937,21 @@ namespace HTML5
                         }
 
                     case ATTRIBUTE_VALUE_UNQUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '&':
+                            case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_UNQUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
                                 ADDITIONAL_ALLOWED = '>';
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //AttrValue.Append('\ufffd');
                                 unchecked
                                 {
@@ -2808,11 +1960,11 @@ namespace HTML5
                                     AttrValueBuffer[AttrValueBufferPtr++] = '\ufffd';
                                 }
                                 continue;
-                            case '"':
-                            case '\'':
-                            case '<':
-                            case '=':
-                            case '`':
+                            case CHAR_DQUOTE:
+                            case CHAR_SQUOTE:
+                            case CHAR_LT:
+                            case CHAR_EQUAL:
+                            case CHAR_GRAVE:
                                 //AttrValue.Append(c);
                                 unchecked
                                 {
@@ -2845,18 +1997,15 @@ namespace HTML5
                         pointer--;
                         continue;
                     case AFTER_ATTRIBUTE_VALUE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_ATTRIBUTE_NAME_STATE;
                                 continue;
-                            case '/':
+                            case CHAR_SOLIDUS:
                                 STATE = SELF_CLOSING_START_TAG_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitTagToken();
                                 continue;
@@ -2867,9 +2016,9 @@ namespace HTML5
                         }
 
                     case SELF_CLOSING_START_TAG_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '>':
+                            case CHAR_GT:
                                 TagIsSelfClosing = true;
                                 STATE = DATA_STATE;
                                 EmitTagToken();
@@ -2944,12 +2093,12 @@ namespace HTML5
                         STATE = BOGUS_COMMENT_STATE;
                         continue;
                     case COMMENT_START_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = COMMENT_START_DASH_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append('\ufffd');
                                 unchecked
                                 {
@@ -2959,7 +2108,7 @@ namespace HTML5
                                 }
                                 STATE = COMMENT_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitCommentToken();
                                 continue;
@@ -2976,12 +2125,12 @@ namespace HTML5
                         }
 
                     case COMMENT_START_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = COMMENT_END_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append(X_MINUS2_REPLACEMENT);
                                 unchecked
                                 {
@@ -2993,7 +2142,7 @@ namespace HTML5
                                 }
                                 STATE = COMMENT_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitCommentToken();
                                 continue;
@@ -3012,12 +2161,12 @@ namespace HTML5
                         }
 
                     case COMMENT_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = COMMENT_END_DASH_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append('\ufffd');
                                 unchecked
                                 {
@@ -3038,12 +2187,12 @@ namespace HTML5
                         }
 
                     case COMMENT_END_DASH_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 STATE = COMMENT_END_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append(X_MINUS_REPLACEMENT);
                                 unchecked
                                 {
@@ -3069,13 +2218,13 @@ namespace HTML5
                         }
 
                     case COMMENT_END_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitCommentToken();
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append(X_MINUS2_REPLACEMENT);
                                 unchecked
                                 {
@@ -3087,10 +2236,10 @@ namespace HTML5
                                 }
                                 STATE = COMMENT_STATE;
                                 continue;
-                            case '!':
+                            case CHAR_EXCLAMATION:
                                 STATE = COMMENT_END_BANG_STATE;
                                 continue;
-                            case '-':
+                            case CHAR_MINUS:
                                 //Comment.Append('-');
                                 unchecked
                                 {
@@ -3115,9 +2264,9 @@ namespace HTML5
                         }
 
                     case COMMENT_END_BANG_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '-':
+                            case CHAR_MINUS:
                                 //Comment.Append(X_MINUS2_EXCLAMATION);
                                 unchecked
                                 {
@@ -3129,11 +2278,11 @@ namespace HTML5
                                 }
                                 STATE = COMMENT_END_DASH_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitCommentToken();
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 //Comment.Append(X_MINUS2_EXCLAMATION_REPLACEMENT);
                                 unchecked
                                 {
@@ -3163,12 +2312,9 @@ namespace HTML5
                         }
 
                     case DOCTYPE_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_DOCTYPE_NAME_STATE;
                                 continue;
                             default:
@@ -3178,49 +2324,21 @@ namespace HTML5
                         }
 
                     case BEFORE_DOCTYPE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
                                 doctype.NewDoctype();
                                 doctype.DoctypeName.Append((char)(c + 0x0020));
                                 STATE = DOCTYPE_NAME_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.NewDoctype();
                                 doctype.DoctypeName.Append('\ufffd');
                                 STATE = DOCTYPE_NAME_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.NewDoctype();
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
@@ -3234,47 +2352,19 @@ namespace HTML5
                         }
 
                     case DOCTYPE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = AFTER_DOCTYPE_NAME_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
                                 continue;
-                            case 'A':
-                            case 'B':
-                            case 'C':
-                            case 'D':
-                            case 'E':
-                            case 'F':
-                            case 'G':
-                            case 'H':
-                            case 'I':
-                            case 'J':
-                            case 'K':
-                            case 'L':
-                            case 'M':
-                            case 'N':
-                            case 'O':
-                            case 'P':
-                            case 'Q':
-                            case 'R':
-                            case 'S':
-                            case 'T':
-                            case 'U':
-                            case 'V':
-                            case 'W':
-                            case 'X':
-                            case 'Y':
-                            case 'Z':
+                            case CHAR_ALPHA_UP:
                                 doctype.DoctypeName.Append((char)(c + 0x0020));
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.DoctypeName.Append('\ufffd');
                                 continue;
                             default:
@@ -3283,14 +2373,11 @@ namespace HTML5
                         }
 
                     case AFTER_DOCTYPE_NAME_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
                                 continue;
@@ -3323,23 +2410,20 @@ namespace HTML5
                         }
 
                     case AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptyPublicId = true;
                                 STATE = DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptyPublicId = true;
                                 STATE = DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3351,22 +2435,19 @@ namespace HTML5
                         }
 
                     case BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptyPublicId = true;
                                 STATE = DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptyPublicId = true;
                                 STATE = DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3378,15 +2459,15 @@ namespace HTML5
                         }
 
                     case DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '"':
+                            case CHAR_DQUOTE:
                                 STATE = AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.DoctypePublicId.Append('\ufffd');
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3397,15 +2478,15 @@ namespace HTML5
                         }
 
                     case DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 STATE = AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.DoctypePublicId.Append('\ufffd');
                                 continue;
-                            case '>':
+                            case CHAR_DQUOTE:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3416,23 +2497,20 @@ namespace HTML5
                         }
 
                     case AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDENTIFIERS_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
@@ -3443,22 +2521,19 @@ namespace HTML5
                         }
 
                     case BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDENTIFIERS_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
@@ -3469,23 +2544,20 @@ namespace HTML5
                         }
 
                     case AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 STATE = BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3497,22 +2569,19 @@ namespace HTML5
                         }
 
                     case BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '"':
+                            case CHAR_DQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE;
                                 continue;
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 doctype.EmptySystemId = true;
                                 STATE = DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE;
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3524,15 +2593,15 @@ namespace HTML5
                         }
 
                     case DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '"':
+                            case CHAR_DQUOTE:
                                 STATE = AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.DocktypeSystemId.Append('\ufffd');
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3543,15 +2612,15 @@ namespace HTML5
                         }
 
                     case DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\'':
+                            case CHAR_SQUOTE:
                                 STATE = AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE;
                                 continue;
-                            case '\u0000':
+                            case CHAR_NULL:
                                 doctype.DocktypeSystemId.Append('\ufffd');
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
@@ -3562,14 +2631,11 @@ namespace HTML5
                         }
 
                     case AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE:
-                        switch (c)
+                        switch (crtc)
                         {
-                            case '\u0009':
-                            case '\u000a':
-                            case '\u000c':
-                            case '\u0020':
+                            case CHAR_WS:
                                 continue;
-                            case '>':
+                            case CHAR_GT:
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
                                 continue;

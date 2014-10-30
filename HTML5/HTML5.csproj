@@ -41,7 +41,6 @@
     <Compile Include="FormatingList.cs" />
     <Compile Include="HTML5Enums.cs" />
     <Compile Include="NamedCharRef.cs" />
-    <Compile Include="TestCodes.cs" />
     <Compile Include="Tokenizer.cs" />
     <Compile Include="TreeBuilder.cs" />
   </ItemGroup>
