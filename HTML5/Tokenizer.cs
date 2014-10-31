@@ -453,33 +453,33 @@ namespace HTML5
                 #region iterate
                 switch (c)
                 {
-                    case '\n':
-                        if (lastWasCR)
-                        {
-                            lastWasCR = false;
-                            continue;
-                        }
+	                case '\n':
+	                    if (lastWasCR)
+	                    {
+	                        lastWasCR = false;
+	                        continue;
+	                    }
 						crtc = CHAR_WS;
-                        break;
-                    case '\r':
-                        {
-                            c = '\n';
+	                    break;
+	                case '\r':
+	                    {
+	                        c = '\n';
 							crtc = CHAR_WS;
-                            lastWasCR = true;
-                        }
-                        break;
-                    case '\t':
+	                        lastWasCR = true;
+	                    }
+	                    break;
+	                case '\t':
 					case '\f':
 					case ' ':
-                        lastWasCR = false;
+	                    lastWasCR = false;
 						crtc = CHAR_WS;
-                        break;
-                    case '\ufeff':
+	                    break;
+	                case '\ufeff':
 						lastWasCR = false;
-                        if (pointer == 0 && parsingCalls == 0)
-                            continue;
+	                    if (pointer == 0 && parsingCalls == 0)
+	                        continue;
 						crtc = CHAR_REPLACEMENT;
-                        break;
+	                    break;
 					case '&':
 						lastWasCR = false;
 						crtc = CHAR_AMPER;
@@ -586,11 +586,11 @@ namespace HTML5
 						lastWasCR = false;
 						crtc = CHAR_ALPHA_LOW;
 						break;
-                    default:
-                        lastWasCR = false;
-                        if (Char.IsControl(c))
-                            continue;
-                        break;
+	                default:
+	                    lastWasCR = false;
+	                    if (Char.IsControl(c))
+	                        continue;
+	                    break;
                 }
 
                 switch (STATE)
