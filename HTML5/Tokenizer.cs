@@ -468,18 +468,18 @@ namespace HTML5
 	                        lastWasCR = true;
 	                    }
 	                    break;
-	                case '\t':
+					case '\t':
 					case '\f':
 					case ' ':
-	                    lastWasCR = false;
-						crtc = CHAR_WS;
-	                    break;
-	                case '\ufeff':
 						lastWasCR = false;
-	                    if (pointer == 0 && parsingCalls == 0)
-	                        continue;
+						crtc = CHAR_WS;
+						break;
+					case '\ufeff':
+						lastWasCR = false;
+						if (pointer == 0 && parsingCalls == 0)
+						    continue;
 						crtc = CHAR_REPLACEMENT;
-	                    break;
+						break;
 					case '&':
 						lastWasCR = false;
 						crtc = CHAR_AMPER;
@@ -586,11 +586,11 @@ namespace HTML5
 						lastWasCR = false;
 						crtc = CHAR_ALPHA_LOW;
 						break;
-	                default:
-	                    lastWasCR = false;
-	                    if (Char.IsControl(c))
-	                        continue;
-	                    break;
+					default:
+						lastWasCR = false;
+						if (Char.IsControl(c))
+						    continue;
+						break;
                 }
 
                 switch (STATE)
