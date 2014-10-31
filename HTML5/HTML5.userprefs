@@ -1,8 +1,10 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="MyClass.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="TreeBuilder.cs">
     <Files>
-      <File FileName="MyClass.cs" Line="1" Column="1" />
+      <File FileName="TreeBuilder.cs" Line="1733" Column="30" />
+      <File FileName="Tokenizer.cs" Line="87" Column="39" />
+      <File FileName="NamedCharRef.cs" Line="22" Column="37" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

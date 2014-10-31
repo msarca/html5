@@ -2486,7 +2486,7 @@ namespace HTML5
                             case CHAR_NULL:
                                 doctype.DoctypePublicId.Append('\ufffd');
                                 continue;
-                            case CHAR_DQUOTE:
+                            case CHAR_GT:
                                 doctype.ForceQuirks = true;
                                 STATE = DATA_STATE;
                                 EmitDoctypeToken();
