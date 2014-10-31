@@ -5,78 +5,78 @@ namespace HTML5
 {
     public class Tokenizer<T> where T: class
     {
-        #region STATES
-        internal const byte DATA_STATE = 1;
-        internal const byte CHARACTER_REFERENCE_IN_DATA_STATE = 2;
-        internal const byte RCDATA_STATE = 3;
-        internal const byte CHARACTER_REFERENCE_IN_RCDATA_STATE = 4;
-        internal const byte RAWTEXT_STATE = 5;
-        internal const byte SCRIPT_DATA_STATE = 6;
-        internal const byte PLAINTEXT_STATE = 7;
-        internal const byte TAG_OPEN_STATE = 8;
-        internal const byte END_TAG_OPEN_STATE = 9;
-        internal const byte TAG_NAME_STATE = 10;
-        internal const byte RCDATA_LESS_THEN_SIGN_STATE = 11;
-        internal const byte RCDATA_END_TAG_OPEN_STATE = 12;
-        internal const byte RCDATA_END_TAG_NAME_STATE = 13;
-        internal const byte RAWTEXT_LESS_THAN_SIGN_STATE = 14;
-        internal const byte RAWTEXT_END_TAG_OPEN_STATE = 15;
-        internal const byte RAWTEXT_END_TAG_NAME_STATE = 16;
-        internal const byte SCRIPT_DATA_LESS_THAN_SIGN_STATE = 17;
-        internal const byte SCRIPT_DATA_END_TAG_OPEN_STATE = 18;
-        internal const byte SCRIPT_DATA_END_TAG_NAME_STATE = 19;
-        internal const byte SCRIPT_DATA_ESCAPE_START_STATE = 20;
-        internal const byte SCRIPT_DATA_ESCAPE_START_DASH_STATE = 21;
-        internal const byte SCRIPT_DATA_ESCAPED_STATE = 22;
-        internal const byte SCRIPT_DATA_ESCAPED_DASH_STATE = 23;
-        internal const byte SCRIPT_DATA_ESCAPED_DASH_DASH_STATE = 24;
-        internal const byte SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE = 25;
-        internal const byte SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE = 26;
-        internal const byte SCRIPT_DATA_ESCAPED_END_TAG_NAME_STATE = 27;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE = 28;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_STATE = 29;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE = 30;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE = 31;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN_STATE = 32;
-        internal const byte SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE = 33;
-        internal const byte BEFORE_ATTRIBUTE_NAME_STATE = 34;
-        internal const byte ATTRIBUTE_NAME_STATE = 35;
-        internal const byte AFTER_ATTRIBUTE_NAME_STATE = 36;
-        internal const byte BEFORE_ATTRIBUTE_VALUE_STATE = 37;
-        internal const byte ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE = 38;
-        internal const byte ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE = 39;
-        internal const byte ATTRIBUTE_VALUE_UNQUOTED_STATE = 40;
-        internal const byte CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE = 41;
-        internal const byte AFTER_ATTRIBUTE_VALUE_QUOTED_STATE = 42;
-        internal const byte SELF_CLOSING_START_TAG_STATE = 43;
-        internal const byte BOGUS_COMMENT_STATE = 44;
-        internal const byte MARKUP_DECLARATION_OPEN_STATE = 45;
-        internal const byte COMMENT_START_STATE = 46;
-        internal const byte COMMENT_START_DASH_STATE = 47;
-        internal const byte COMMENT_STATE = 48;
-        internal const byte COMMENT_END_DASH_STATE = 49;
-        internal const byte COMMENT_END_STATE = 50;
-        internal const byte COMMENT_END_BANG_STATE = 51;
-        internal const byte DOCTYPE_STATE = 52;
-        internal const byte BEFORE_DOCTYPE_NAME_STATE = 53;
-        internal const byte DOCTYPE_NAME_STATE = 54;
-        internal const byte AFTER_DOCTYPE_NAME_STATE = 55;
-        internal const byte AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE = 56;
-        internal const byte BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE = 57;
-        internal const byte DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE = 58;
-        internal const byte DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE = 59;
-        internal const byte AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE = 60;
-        internal const byte BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDENTIFIERS_STATE = 61;
-        internal const byte AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE = 62;
-        internal const byte BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE = 63;
-        internal const byte DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE = 64;
-        internal const byte DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE = 65;
-        internal const byte AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE = 66;
-        internal const byte BOGUS_DOCTYPE_STATE = 67;
-        internal const byte CDATA_SECTION_STATE = 68;
-        #endregion
+		#region STATES
+		internal const byte DATA_STATE = 1;
+		internal const byte CHARACTER_REFERENCE_IN_DATA_STATE = 2;
+		internal const byte RCDATA_STATE = 3;
+		internal const byte CHARACTER_REFERENCE_IN_RCDATA_STATE = 4;
+		internal const byte RAWTEXT_STATE = 5;
+		internal const byte SCRIPT_DATA_STATE = 6;
+		internal const byte PLAINTEXT_STATE = 7;
+		internal const byte TAG_OPEN_STATE = 8;
+		internal const byte END_TAG_OPEN_STATE = 9;
+		internal const byte TAG_NAME_STATE = 10;
+		internal const byte RCDATA_LESS_THEN_SIGN_STATE = 11;
+		internal const byte RCDATA_END_TAG_OPEN_STATE = 12;
+		internal const byte RCDATA_END_TAG_NAME_STATE = 13;
+		internal const byte RAWTEXT_LESS_THAN_SIGN_STATE = 14;
+		internal const byte RAWTEXT_END_TAG_OPEN_STATE = 15;
+		internal const byte RAWTEXT_END_TAG_NAME_STATE = 16;
+		internal const byte SCRIPT_DATA_LESS_THAN_SIGN_STATE = 17;
+		internal const byte SCRIPT_DATA_END_TAG_OPEN_STATE = 18;
+		internal const byte SCRIPT_DATA_END_TAG_NAME_STATE = 19;
+		internal const byte SCRIPT_DATA_ESCAPE_START_STATE = 20;
+		internal const byte SCRIPT_DATA_ESCAPE_START_DASH_STATE = 21;
+		internal const byte SCRIPT_DATA_ESCAPED_STATE = 22;
+		internal const byte SCRIPT_DATA_ESCAPED_DASH_STATE = 23;
+		internal const byte SCRIPT_DATA_ESCAPED_DASH_DASH_STATE = 24;
+		internal const byte SCRIPT_DATA_ESCAPED_LESS_THAN_SIGN_STATE = 25;
+		internal const byte SCRIPT_DATA_ESCAPED_END_TAG_OPEN_STATE = 26;
+		internal const byte SCRIPT_DATA_ESCAPED_END_TAG_NAME_STATE = 27;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPE_START_STATE = 28;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_STATE = 29;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_DASH_STATE = 30;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_DASH_DASH_STATE = 31;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPED_LESS_THAN_SIGN_STATE = 32;
+		internal const byte SCRIPT_DATA_DOUBLE_ESCAPE_END_STATE = 33;
+		internal const byte BEFORE_ATTRIBUTE_NAME_STATE = 34;
+		internal const byte ATTRIBUTE_NAME_STATE = 35;
+		internal const byte AFTER_ATTRIBUTE_NAME_STATE = 36;
+		internal const byte BEFORE_ATTRIBUTE_VALUE_STATE = 37;
+		internal const byte ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE = 38;
+		internal const byte ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE = 39;
+		internal const byte ATTRIBUTE_VALUE_UNQUOTED_STATE = 40;
+		internal const byte CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE = 41;
+		internal const byte AFTER_ATTRIBUTE_VALUE_QUOTED_STATE = 42;
+		internal const byte SELF_CLOSING_START_TAG_STATE = 43;
+		internal const byte BOGUS_COMMENT_STATE = 44;
+		internal const byte MARKUP_DECLARATION_OPEN_STATE = 45;
+		internal const byte COMMENT_START_STATE = 46;
+		internal const byte COMMENT_START_DASH_STATE = 47;
+		internal const byte COMMENT_STATE = 48;
+		internal const byte COMMENT_END_DASH_STATE = 49;
+		internal const byte COMMENT_END_STATE = 50;
+		internal const byte COMMENT_END_BANG_STATE = 51;
+		internal const byte DOCTYPE_STATE = 52;
+		internal const byte BEFORE_DOCTYPE_NAME_STATE = 53;
+		internal const byte DOCTYPE_NAME_STATE = 54;
+		internal const byte AFTER_DOCTYPE_NAME_STATE = 55;
+		internal const byte AFTER_DOCTYPE_PUBLIC_KEYWORD_STATE = 56;
+		internal const byte BEFORE_DOCTYPE_PUBLIC_IDENTIFIER_STATE = 57;
+		internal const byte DOCTYPE_PUBLIC_IDENTIFIER_DOUBLE_QUOTED_STATE = 58;
+		internal const byte DOCTYPE_PUBLIC_IDENTIFIER_SINGLE_QUOTED_STATE = 59;
+		internal const byte AFTER_DOCTYPE_PUBLIC_IDENTIFIER_STATE = 60;
+		internal const byte BETWEEN_DOCTYPE_PUBLIC_AND_SYSTEM_IDENTIFIERS_STATE = 61;
+		internal const byte AFTER_DOCTYPE_SYSTEM_KEYWORD_STATE = 62;
+		internal const byte BEFORE_DOCTYPE_SYSTEM_IDENTIFIER_STATE = 63;
+		internal const byte DOCTYPE_SYSTEM_IDENTIFIER_DOUBLE_QUOTED_STATE = 64;
+		internal const byte DOCTYPE_SYSTEM_IDENTIFIER_SINGLE_QUOTED_STATE = 65;
+		internal const byte AFTER_DOCTYPE_SYSTEM_IDENTIFIER_STATE = 66;
+		internal const byte BOGUS_DOCTYPE_STATE = 67;
+		internal const byte CDATA_SECTION_STATE = 68;
+		#endregion
 
-        #region Constants
+		#region Constants
 		private const byte CHAR_ALPHA_LOW = 1; //alpha chars
 		private const byte CHAR_ALPHA_UP = 2;
 		private const byte CHAR_NULL = 3;
@@ -95,29 +95,29 @@ namespace HTML5
 		private const byte CHAR_QUESTION = 16;
 		private const byte CHAR_WS = 17;
 		private const byte CHAR_EOF = 18;
-        #endregion
+		#endregion
 
-        char[] TempBuffer, TagName, DataBuffer, CommentBuffer, AttrNameBuffer, AttrValueBuffer;
-        int TempBufferPtr = 0, DataBufferPtr = 0, TagNamePtr = 0, CommentBufferPtr = 0, AttrNameBufferPtr = 0,
-            AttrValueBufferPtr = 0;
-        int TempBufferLength = 1024, DataBufferLength = 1024, TagNameLength = 1024, CommentBufferLength = 1024,
-            AttrNameBufferLength = 1024, AttrValueBufferLength = 1024, AttrCount = 0;
+		char[] TempBuffer, TagName, DataBuffer, CommentBuffer, AttrNameBuffer, AttrValueBuffer;
+		int TempBufferPtr = 0, DataBufferPtr = 0, TagNamePtr = 0, CommentBufferPtr = 0, AttrNameBufferPtr = 0,
+		    AttrValueBufferPtr = 0;
+		int TempBufferLength = 1024, DataBufferLength = 1024, TagNameLength = 1024, CommentBufferLength = 1024,
+		    AttrNameBufferLength = 1024, AttrValueBufferLength = 1024, AttrCount = 0;
 
 
-        internal byte STATE;
-        DoctypeToken doctype;
-        string LastTagName = string.Empty;
-        bool TagIsSelfClosing = false, TagEndTag = false, iscapital = false;
-        AttributeEntry AttrList = null;
-        bool lastWasCR = false;
-        int parsingCalls = 0;
-        internal Decoder ByteDecoder, ByteDecoderCopy;
-        internal char[] pendingBuffer = null, pendingBufferCopy = null;
-        internal int pendingBufferLength = 0, pendingBufferCopyLength = 0;
+		internal byte STATE;
+		DoctypeToken doctype;
+		string LastTagName = string.Empty;
+		bool TagIsSelfClosing = false, TagEndTag = false, iscapital = false;
+		AttributeEntry AttrList = null;
+		bool lastWasCR = false;
+		int parsingCalls = 0;
+		internal Decoder ByteDecoder, ByteDecoderCopy;
+		internal char[] pendingBuffer = null, pendingBufferCopy = null;
+		internal int pendingBufferLength = 0, pendingBufferCopyLength = 0;
 
-        byte LAST_STATE;
-        char ADDITIONAL_ALLOWED = '\u0000';
-        TreeBuilder<T> builder;
+		byte LAST_STATE;
+		char ADDITIONAL_ALLOWED = '\u0000';
+		TreeBuilder<T> builder;
 
         public Tokenizer(TreeBuilder<T> builder)
         {
