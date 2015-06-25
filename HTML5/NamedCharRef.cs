@@ -209,22 +209,22 @@ namespace HTML5
 					return null;
 				}
 
-				move = i;
 
-				for (int k = sb.Length; k >= 1; k--) 
+				for (int k = sb.Length; k >= 1; k--, i--) 
 				{
 					char[] chr = mapReference (sb.ToString (0, k));
 
 					if (chr != null) 
 					{
+						move = i;
 						return chr;
 					}
 
 				}
 
-				break;
+				return null;
 			}
-
+			wait = true;
 			return null;
 		}
 
