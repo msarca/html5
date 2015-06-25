@@ -289,7 +289,7 @@ namespace HTML5
 			case 0x9F:
 				return new char[] { '\u0178' };
 			default:
-				if ((code >= 0xD800 && code < 0xDFFF) || (code > 0x10FFFF)) {
+				if ((code >= 0xD800 && code <= 0xDFFF) || (code > 0x10FFFF)) {
 					return new char[] { '\uFFFD' };
 				}
 				break;
