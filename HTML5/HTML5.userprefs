@@ -2,9 +2,8 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Release" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Tokenizer.cs">
     <Files>
-      <File FileName="TreeBuilder.cs" Line="1733" Column="30" />
-      <File FileName="Tokenizer.cs" Line="2726" Column="3" />
-      <File FileName="NamedCharRef.cs" Line="1" Column="1" />
+      <File FileName="Tokenizer.cs" Line="661" Column="15" />
+      <File FileName="NamedCharRef.cs" Line="9" Column="3" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>

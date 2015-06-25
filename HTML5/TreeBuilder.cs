@@ -1361,6 +1361,7 @@ namespace HTML5
                             return 1;
                         default:
                             {
+								//TODO:Update
                                 ElementToken fakeToken = new ElementToken("head");
                                 StartTagToken(ref fakeToken, mode);
                                 mode = REPROCESS; goto EVAL;
@@ -1374,7 +1375,7 @@ namespace HTML5
                         case "base":
                         case "basefont":
                         case "bgsound":
-                        case "command":
+                        case "command": //What is this?
                         case "link":
                             InsertHtmlElement(ref token);
                             O.Pop();
@@ -1407,7 +1408,8 @@ namespace HTML5
                             }
                             return 1;
                         case "script":
-                            {
+							{	
+								//TODO: Update the algorithm
                                 T script = CreateElement(token.TagName, token.Attributes, NS_HTML);
                                 SetScriptFlag(script, ScriptElementFlag.ParserInserted, true);
                                 SetScriptFlag(script, ScriptElementFlag.ForceAsync, false);
@@ -1420,9 +1422,11 @@ namespace HTML5
                                 INSERTION_MODE = TEXT;
                             }
                             return 1;
+						//TODO: Add support for the <template> element
                         case "head":
                             return 0;//ignored
                         default:
+							//TODO: Must be updated
                             EndTagToken("head", mode);
                             mode = REPROCESS; goto EVAL;
                            //StartTagToken(tagName, attributes, selfClosing, REPROCESS);
@@ -1449,6 +1453,7 @@ namespace HTML5
                         case "noscript":
                             return 0;//ignore token
                         default:
+							//TODO: Must be updated
                             EndTagToken("noscript", mode);
                             mode = REPROCESS; goto EVAL;
                             //StartTagToken(tagName, attributes, selfClosing, REPROCESS);

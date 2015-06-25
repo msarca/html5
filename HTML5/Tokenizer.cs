@@ -116,7 +116,7 @@ namespace HTML5
 		internal int pendingBufferLength = 0, pendingBufferCopyLength = 0;
 
 		byte LAST_STATE;
-		char ADDITIONAL_ALLOWED = '\u0000';
+		char[] ADDITIONAL_ALLOWED;
 		TreeBuilder<T> builder;
 
         public Tokenizer(TreeBuilder<T> builder)
@@ -361,79 +361,57 @@ namespace HTML5
             AttrValueBuffer = tmp;
         }
 
-        private char[] charcterReference(int ENDOFSTREAM)
+		private char[] charcterReference(char[] cbuff, int pointer, int length, ref bool wait, ref int move)
         {
-            /*
-            char c = '\u0000';
-            
-            //TODO: Continue implementation of characterReference
-            if (pointer + 1 >= ENDOFSTREAM)
-                return null;
-            
-            c = stream[pointer + 1];
-            if (isWhitespace(ref c) || c == '<' || c == '&' || (c == ADDITIONAL_ALLOWED && ADDITIONAL_ALLOWED != '\u0000'))
-                return null;
-            if (c == '#')
-            {
-                pointer++;//consume
-                if (pointer + 1 >= ENDOFSTREAM)
-                {
-                     pointer--;
-                    return null;
-                }
-                string number = string.Empty;
-                bool hex = false;
-                c = stream[pointer + 1];
-                if (c == 'x' || c == 'X')
-                {
-                    hex = true;
-                    pointer++;
-                }
-                while (true)
-                {
-                    if (pointer + 1 >= ENDOFSTREAM)
-                        break;
-                    c = stream[pointer + 1];
-                    if (hex)
-                    {
-                        if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
-                        {
-                            number += c;
-                            pointer++;//consume current char
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        if (c >= '0' && c <= '9')
-                        {
-                            number += c;
-                            pointer++;//consume current char
-                        }
-                        break;
-                    }
-                }
-                if (number == string.Empty)
-                {
-                    pointer -= hex ? 2 : 1;
-                    return null;
-                }
-                if (pointer + 1 < ENDOFSTREAM && stream[pointer + 1] == ';')
-                    pointer++;
-                int refno = int.Parse(number, hex ? System.Globalization.NumberStyles.HexNumber 
-                    : System.Globalization.NumberStyles.Integer);
-                if (refno >= 0x80 && refno <= 0x9F)
-                    return R_NO_CHARS[refno - 0x80];
-                if (refno == 0x00)
-                    return R_REPLACEMENT;
-                if (refno == 0x0D)
-                    return R_CR;
-                if ((refno >= 0xD800 && refno <= 0xDFFF) || refno > 0x10FFFF)
-                    return R_REPLACEMENT;
-                return new char[] { (char)refno }; 
-            }*/
-            return null;
+
+			if (pointer + 1 >= length) 
+			{
+				wait = true;
+				return null;
+			}
+
+			bool number = false;
+			char c = cbuff [pointer];
+
+			if (ADDITIONAL_ALLOWED != null && ADDITIONAL_ALLOWED [0] == c) 
+			{
+				return null;
+			}
+
+				switch (c) 
+				{
+				case '\n':
+				case '\f':
+				case '\t':
+				case ' ':
+				case '<':
+				case '&':
+					return null;
+				case '#':
+					number = true;
+					goto charcterReference_NUMBER;
+			}
+
+			return NamedCharRef.matchReference (cbuff, pointer, length, ref wait, ref move);
+
+			charcterReference_NUMBER:
+
+			if (pointer + 2 >= length) 
+			{
+				wait = true;
+				return null;
+			}
+
+			c = cbuff [pointer + 2];
+			if (c == 'x' || c == 'X') {
+				return NamedCharRef.matchHexDigits (cbuff, pointer + 3, length, ref wait, ref move);
+			}
+
+			return NamedCharRef.matchDecDigits (cbuff, pointer + 3, length, ref wait, ref move);
+
         }
+
+
 
         internal void Parse(byte[] chunk, int chunkLength)
         {
@@ -626,22 +604,37 @@ namespace HTML5
                     case CHARACTER_REFERENCE_IN_DATA_STATE:
                         {
                             STATE = DATA_STATE;
-                            unchecked
-                            {
-                                if (DataBufferPtr == DataBufferLength)
-                                    DataBufferDoubleSize();
-                                DataBuffer[DataBufferPtr++] = '&';
-                            }
-                            //DataBuffer.Append('&');
-                            pointer--;
-                            //TODO: remove comments when ready
-                            /*
-                            ADDITIONAL_ALLOWED = '\u0000';
-                            char[] ca = charcterReference();
-                            if (ca == null)
-                                DataBuffer.Append('&');
-                            else
-                                DataBuffer.Append(ca);*/
+							ADDITIONAL_ALLOWED = null;
+							bool wait = false;		
+							char[] data = charcterReference(cbuff, pointer, length, ref wait, ref pointer);
+							
+							if(data == null)
+							{
+								if(wait)
+								{
+									pendingBufferLength = length - pointer;
+									pendingBuffer = new char[pendingBufferLength];
+									Array.Copy(cbuff, pointer, pendingBuffer, 0, pendingBufferLength);
+									STATE = CHARACTER_REFERENCE_IN_DATA_STATE;
+									return;
+								}
+
+								if (DataBufferPtr == DataBufferLength)
+									DataBufferDoubleSize();
+								DataBuffer[DataBufferPtr++] = '&';
+								pointer--;
+								continue;
+							}
+							
+							int dlen = data.Length;
+							if (DataBufferPtr + dlen == DataBufferLength)
+								DataBufferDoubleSize();
+							
+							for(int k = 0; k < dlen; k++)
+							{
+								DataBuffer[DataBufferPtr++] = data[k];
+							}
+							
                         }
                         break;
                     case RCDATA_STATE:
@@ -676,22 +669,37 @@ namespace HTML5
                     case CHARACTER_REFERENCE_IN_RCDATA_STATE:
                         {
                             STATE = RCDATA_STATE;
-                            unchecked
-                            {
-                                if (DataBufferPtr == DataBufferLength)
-                                    DataBufferDoubleSize();
-                                DataBuffer[DataBufferPtr++] = '&';
-                            }
-                            //DataBuffer.Append('&');
-                            pointer--;
-                            //TODO: remove comment when ready
-                            /*
-                            ADDITIONAL_ALLOWED = '\u0000';
-                            char[] ca = charcterReference();
-                            if (ca == null)
-                                DataBuffer.Append('&');
-                            else
-                                DataBuffer.Append(ca);*/
+							
+							ADDITIONAL_ALLOWED = null;
+							bool wait = false;		
+							char[] data = charcterReference(cbuff, pointer, length, ref wait, ref pointer);
+
+							if(data == null)
+							{
+								if(wait)
+								{
+									pendingBufferLength = length - pointer;
+									pendingBuffer = new char[pendingBufferLength];
+									Array.Copy(cbuff, pointer, pendingBuffer, 0, pendingBufferLength);
+									STATE = CHARACTER_REFERENCE_IN_RCDATA_STATE;
+									return;
+								}
+
+								if (DataBufferPtr == DataBufferLength)
+									DataBufferDoubleSize();
+								DataBuffer[DataBufferPtr++] = '&';
+								pointer--;
+								continue;
+							}
+
+							int dlen = data.Length;
+							if (DataBufferPtr + dlen == DataBufferLength)
+								DataBufferDoubleSize();
+
+							for(int k = 0; k < dlen; k++)
+							{
+								DataBuffer[DataBufferPtr++] = data[k];
+							}
                         }
                         break;
                     case RAWTEXT_STATE:
@@ -1883,7 +1891,7 @@ namespace HTML5
                             case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_DOUBLE_QUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
-                                ADDITIONAL_ALLOWED = '"';
+								ADDITIONAL_ALLOWED = new char[] {'"'};
                                 continue;
                             case CHAR_NULL:
                                 //AttrValue.Append('\ufffd');
@@ -1914,7 +1922,7 @@ namespace HTML5
                             case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_SINGLE_QUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
-                                ADDITIONAL_ALLOWED = '\'';
+								ADDITIONAL_ALLOWED = new char[]{'\''};
                                 continue;
                             case CHAR_NULL:
                                 //AttrValue.Append('\ufffd');
@@ -1945,7 +1953,7 @@ namespace HTML5
                             case CHAR_AMPER:
                                 LAST_STATE = ATTRIBUTE_VALUE_UNQUOTED_STATE;
                                 STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
-                                ADDITIONAL_ALLOWED = '>';
+								ADDITIONAL_ALLOWED = new char[]{ '>' };
                                 continue;
                             case CHAR_GT:
                                 STATE = DATA_STATE;
@@ -1985,17 +1993,40 @@ namespace HTML5
                         }
 
                     case CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE:
-                        //TODO: implement char refference when ready
-                        //AttrValue.Append('&');
-                        unchecked
-                        {
-                            if (AttrValueBufferPtr == AttrValueBufferLength)
-                                AttrValueBufferDoubleSize();
-                            AttrValueBuffer[AttrValueBufferPtr++] = '&';
-                        }
-                        STATE = LAST_STATE;
-                        pointer--;
-                        continue;
+						{
+							bool wait = false;		
+							char[] data = charcterReference(cbuff, pointer, length, ref wait, ref pointer);
+
+							if(data == null)
+							{
+								if(wait)
+								{
+									pendingBufferLength = length - pointer;
+									pendingBuffer = new char[pendingBufferLength];
+									Array.Copy(cbuff, pointer, pendingBuffer, 0, pendingBufferLength);
+									STATE = CHARACTER_REFERENCE_IN_ATTRIBUTE_VALUE_STATE;
+									return;
+								}
+
+								if (AttrValueBufferPtr == AttrValueBufferLength)
+									AttrValueBufferDoubleSize();
+								AttrValueBuffer[AttrValueBufferPtr++] = '&';
+								STATE = LAST_STATE;
+								pointer--;
+								continue;
+							}
+
+							int dlen = data.Length;
+							
+							if (AttrValueBufferPtr == AttrValueBufferLength)
+								AttrValueBufferDoubleSize();
+
+							for(int k = 0; k < dlen; k++)
+							{
+								AttrValueBuffer[AttrValueBufferPtr++] = data[k];
+							}
+						}
+                        break;
                     case AFTER_ATTRIBUTE_VALUE_QUOTED_STATE:
                         switch (crtc)
                         {
