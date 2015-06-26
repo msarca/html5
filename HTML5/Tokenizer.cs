@@ -454,7 +454,7 @@ namespace HTML5
 						break;
 					case '\ufeff':
 						lastWasCR = false;
-						if (pointer == 0 && parsingCalls == 0)
+						if (pointer == 0 && parsingCalls == 1)
 						    continue;
 						crtc = CHAR_REPLACEMENT;
 						break;
